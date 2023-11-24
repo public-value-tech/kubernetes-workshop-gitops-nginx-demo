@@ -1,0 +1,58 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-template
+spec:
+  params:
+    - name: gitrevision
+      description: The git revision
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: standard-pipeline-run
+        annotations:
+          argocd.argoproj.io/compare-options: IgnoreExtraneous
+          argocd.argoproj.io/sync-options: Prune=false
+      spec:
+        taskRunTemplate:
+          serviceAccountName: git
+          podTemplate:
+            securityContext:
+              runAsNonRoot: false
+              runAsUser: 0
+              runAsGroup: 0
+              fsGroup: 0
+        taskRunSpecs:
+          - pipelineTaskName: clone-source-repo
+            serviceAccountName: git
+          - pipelineTaskName: clone-deployment-repo
+            serviceAccountName: git
+        pipelineRef:
+          name: standard-pipeline
+        workspaces:
+        - name: shared-data
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi
+        - name: docker-credentials
+          secret:
+            secretName: gcr-registry-creds
+        - name: ssh-creds
+          secret:
+            secretName: git-ssh-creds
+        params:
+        - name: repo-url
+          value: git@github.com:digitalegarage/kubernetes-workshop-nginx-demo.git
+        - name: image-reference
+          value: europe-west3-docker.pkg.dev/swr-schulung-basic-1/swr-schulung-basic-1/digitalegarage/kubernetes-workshop-nginx-demo
+        - name: image-tag
+          value: "$(tt.params.gitrevision)"
+        - name: manifest-repo
+          value: git@github.com:digitalegarage/kubernetes-workshop-gitops-nginx-demo.git
+        - name: manifest-path
+          value: dev/kustomization.yml

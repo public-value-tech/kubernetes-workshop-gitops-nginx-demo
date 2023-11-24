@@ -1,0 +1,119 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: standard-pipeline
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  description: |
+    This pipeline clones a git repo, builds a Docker image with Kaniko and
+    pushes it to a registry
+  params:
+  - name: repo-url
+    type: string
+  - name: image-reference
+    type: string
+  - name: image-tag
+    type: string
+  - name: manifest-repo
+    type: string
+  workspaces:
+  - name: shared-data
+  - name: docker-credentials
+  - name: ssh-creds
+  tasks:
+  - name: clone-source-repo
+    taskRef:
+      resolver: cluster
+      params:
+      - name: kind
+        value: task
+      - name: name
+        value: git-clone
+      - name: namespace
+        value: tekton-pipelines
+    workspaces:
+    - name: output
+      workspace: shared-data
+    - name: ssh-directory
+      workspace: ssh-creds  
+    params:
+    - name: url
+      value: $(params.repo-url)
+    - name: deleteExisting
+      value: "true"
+  - name: build-push-container-image
+    runAfter: ["clone-source-repo"]
+    taskRef:
+      resolver: cluster
+      params:
+      - name: kind
+        value: task
+      - name: name
+        value: kaniko
+      - name: namespace
+        value: tekton-pipelines
+    workspaces:
+    - name: source
+      workspace: shared-data
+    - name: dockerconfig
+      workspace: docker-credentials
+    params:
+    - name: IMAGE
+      value: $(params.image-reference):$(tasks.clone-source-repo.results.commit)
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: /kaniko/.docker/config.json
+  - name: clone-deployment-repo
+    runAfter: ["build-push-container-image"]
+    taskRef:
+      resolver: cluster
+      params:
+      - name: kind
+        value: task
+      - name: name
+        value: git-clone
+      - name: namespace
+        value: tekton-pipelines
+    workspaces:
+    - name: output
+      workspace: shared-data
+    params:
+    - name: url
+      value: $(params.manifest-repo)
+    - name: deleteExisting
+      value: "true"
+  - name: update-deployment-repo-dev
+    runAfter: ["clone-deployment-repo"]
+    taskRef:
+      resolver: cluster
+      params:
+      - name: kind
+        value: task
+      - name: name
+        value: kustomize-edit
+      - name: namespace
+        value: tekton-pipelines
+    workspaces:
+    - name: source
+      workspace: shared-data
+    params:
+    - name: file-path
+      value: dev/kustomization.yml
+    - name: new-tag
+      value: $(tasks.clone-source-repo.results.commit)
+  finally:
+  - name: finaltask
+    params:
+      - name: aggregateTasksStatus
+        value: "$(tasks.status)"
+    taskSpec:
+      params:
+        - name: aggregateTasksStatus
+      steps:
+        - image: alpine
+          name: check-task-status
+          script: |
+            if [ $(params.aggregateTasksStatus) == "Failed" ]
+            then
+              echo "Looks like one or more tasks returned failure, continue processing the failure"
+            fi

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gcr-registry-creds
+  annotations:
+    vault.security.banzaicloud.io/vault-addr: "https://secrets.s.pub-dev.tech"
+    vault.security.banzaicloud.io/vault-role: "default"
+    vault.security.banzaicloud.io/vault-agent: "false"
+    vault.security.banzaicloud.io/vault-path: "kubernetes"
+    # echo 'secrets/data/kubernetes/infra/tekton#gcr-registry-sa-key' | base64
+    changenotation.secret.vault.pub.tech/config.json: "c2VjcmV0cy9kYXRhL2t1YmVybmV0ZXMvaW5mcmEvdGVrdG9uI2djci1yZWdpc3RyeS1zYS1rZXkK"
+stringData:
+  config.json: vault:secrets/data/kubernetes/infra/tekton#gcr-registry-sa-key

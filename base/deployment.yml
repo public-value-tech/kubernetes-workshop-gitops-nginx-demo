@@ -1,0 +1,21 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nginx-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nginx-demo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nginx-demo
+    spec:
+      containers:
+        - name: web
+          image: europe-west3-docker.pkg.dev/swr-schulung-basic-1/swr-schulung-basic-1/digitalegarage/kubernetes-workshop-nginx-demo:latest
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP

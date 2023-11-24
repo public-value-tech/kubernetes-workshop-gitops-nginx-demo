@@ -1,0 +1,11 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: quickstart-go-graphql
+spec:
+  tls:
+    - hosts:
+      - quickstart-go-graphql.s.pub-dev.tech
+      secretName: quickstart-go-graphql-tls
+  rules:
+  - host: quickstart-go-graphql.s.pub-dev.tech

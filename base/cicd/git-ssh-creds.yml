@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: git-ssh-creds
+  annotations:
+    vault.security.banzaicloud.io/vault-addr: "https://secrets.s.pub-dev.tech"
+    vault.security.banzaicloud.io/vault-role: "default"
+    vault.security.banzaicloud.io/vault-agent: "false"
+    vault.security.banzaicloud.io/vault-path: "kubernetes"
+    tekton.dev/git-0: github.com
+    # echo 'secrets/data/kubernetes/infra/tekton#git-ssh-key' | base64
+    changenotation.secret.vault.pub.tech/ssh-privatekey: "dmF1bHQ6c2VjcmV0cy9kYXRhL2t1YmVybmV0ZXMvaW5mcmEvdGVrdG9uI2dpdC1zc2gta2V5Cg=="
+type: kubernetes.io/ssh-auth
+stringData:
+  ssh-privatekey: vault:secrets/data/kubernetes/infra/tekton#git-ssh-key

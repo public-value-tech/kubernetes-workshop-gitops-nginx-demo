@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+bases:
+  - ../base
+kind: Kustomization
+imageTags:
+  - name: europe-west3-docker.pkg.dev/swr-schulung-basic-1/swr-schulung-basic-1/digitalegarage/kubernetes-workshop-nginx-demo
+    newTag: 3c14f1088070eb063dbc24ef7f5bae5605335868

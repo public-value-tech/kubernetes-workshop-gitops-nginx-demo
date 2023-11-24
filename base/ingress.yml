@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  labels:
+    app.kubernetes.io/name: nginx-demo
+  annotations:
+    kubernetes.io/tls-acme: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+      - nginx-demo-cicd-dev.s.pub-dev.tech
+      secretName: nginx-demo-tls
+  rules:
+  - host: nginx-demo-cicd-dev.s.pub-dev.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 8080
